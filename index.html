@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Road Trip Log — Out West</title>
+<style>
+  :root{
+    --sand:#f4e9d6; --cream:#fbf5ea; --ink:#2e2118; --muted:#7a6350;
+    --rust:#b5502b; --sun:#e9a23b; --turq:#2f7f86; --asphalt:#2b2623; --line:#decbad;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--cream);color:var(--ink);font-family:Georgia,'Times New Roman',serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .label{font-family:'Helvetica Neue',Arial,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:.72rem;font-weight:700;}
+
+  .progress{position:fixed;top:0;left:0;height:4px;background:repeating-linear-gradient(90deg,var(--sun) 0 14px,var(--rust) 14px 28px);width:0%;z-index:50;transition:width .1s linear;}
+
+  /* Hero: desert sunset with mesa silhouette */
+  .hero{position:relative;min-height:92vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:10vh 8vw 24vh;overflow:hidden;
+    background:linear-gradient(180deg,#f7d9a0 0%,#f1b46c 38%,#e0804a 72%,#b5502b 100%);}
+  .hero-inner{position:relative;z-index:2;max-width:var(--maxw);width:100%;margin:0 auto;}
+  .hero .eyebrow{color:#5a2a14;margin-bottom:1.4rem;display:block;}
+  .hero h1{font-size:clamp(2.6rem,7vw,5.4rem);font-weight:700;letter-spacing:-0.02em;line-height:1.02;margin-bottom:1.2rem;color:#2e1608;}
+  .hero p{max-width:560px;font-size:1.15rem;color:#4a2412;}
+  .hero .scroll-cue{margin-top:3rem;color:#4a2412;display:flex;align-items:center;gap:.6rem;}
+  .scroll-cue::after{content:'';width:1px;height:34px;background:#4a2412;animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.2}50%{opacity:.9}}
+  .hero .hint{margin-top:1.2rem;font-size:.95rem;font-style:italic;color:#4a2412;}
+  .sun{position:absolute;right:12vw;top:16vh;width:clamp(90px,16vw,200px);aspect-ratio:1;border-radius:50%;background:#fff3cf;opacity:.85;box-shadow:0 0 80px 30px rgba(255,236,170,.55);z-index:1;}
+  .mesas{position:absolute;left:0;right:0;bottom:0;width:100%;height:24vh;z-index:1;display:block;}
+
+  /* Road divider between stops */
+  .road{height:16px;background:var(--asphalt);position:relative;}
+  .road::after{content:'';position:absolute;left:0;right:0;top:50%;height:3px;transform:translateY(-50%);
+    background:repeating-linear-gradient(90deg,var(--sun) 0 28px,transparent 28px 56px);}
+
+  section.entry{background:var(--cream);}
+  section.entry:nth-of-type(even){background:var(--sand);}
+  .entry-wrap{max-width:var(--maxw);margin:0 auto;padding:9vh 8vw;display:grid;grid-template-columns:1fr;gap:2rem;
+    opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease;}
+  .entry-wrap.visible{opacity:1;transform:translateY(0);}
+  @media(min-width:840px){
+    .entry-wrap{grid-template-columns:1.2fr .8fr;align-items:center;gap:4rem;}
+    section.reverse .entry-wrap{grid-template-columns:.8fr 1.2fr;}
+    section.reverse .entry-media{order:2;}
+    section.reverse .entry-text{order:1;}
+  }
+  /* Photo with white print border */
+  .entry-media img{width:100%;height:auto;display:block;background:#fff;padding:10px 10px 10px;border-radius:3px;box-shadow:0 10px 28px rgba(60,35,15,.22);cursor:zoom-in;transition:transform .25s ease;}
+  .entry-media img:hover{transform:rotate(-.6deg) scale(1.01);}
+  .entry-media .missing{display:flex;align-items:center;justify-content:center;padding:1rem;border-radius:3px;aspect-ratio:4/3;background:#efe2c8;border:2px dashed #c9a877;box-shadow:none;cursor:default;color:var(--muted);font-size:.8rem;text-align:center;}
+
+  .stop{display:inline-block;margin-bottom:1rem;padding:.35rem .9rem;background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:8px 8px 14px 14px;color:var(--ink);}
+  .stop b{color:var(--rust);}
+  .entry-text p{font-size:1.05rem;color:#3d2c20;max-width:46ch;}
+
+  .lightbox{position:fixed;inset:0;background:rgba(25,14,8,.94);display:none;align-items:center;justify-content:center;z-index:100;padding:5vh 5vw;cursor:zoom-out;}
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:2px;}
+  .lightbox .close{position:absolute;top:24px;right:32px;color:#fff;font-size:1.6rem;line-height:1;opacity:.7;}
+
+  footer{background:var(--asphalt);color:#f1e3c9;padding:10vh 8vw;text-align:center;}
+  footer .label{color:var(--sun);display:block;margin-bottom:1rem;}
+  footer p{font-size:1.2rem;max-width:560px;margin:0 auto;}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="lightbox" id="lightbox"><span class="close">&times;</span><img id="lightbox-img" src="" alt=""></div>
+
+<header class="hero">
+  <div class="sun"></div>
+  <div class="hero-inner">
+    <h1>5,000 miles</h1>
+    <p>I drove through Ohio, Indiana, Illinois, Iowa, Nebraska, Colorado, Utah, Wyoming, and Kansas to see the most incredible gas stations America has to offer.</p>
+    <div class="label scroll-cue">Hit the road &mdash; please scroll down</div>
+    <p class="hint">Photos can be enlarged by clicking on them</p>
+  </div>
+  <svg class="mesas" viewBox="0 0 1200 200" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 200V150h90l10-30h110l12 30h60v-40h70l8-24h130l10 24h50v50h80l14-62h90l10 62h70v-34h110l10-26h120l10 26h96V200z" fill="#7a3418" opacity=".55"/>
+    <path d="M0 200v-26h140l8-22h90l8 22h120v-18h80l10-30h140l10 30h90v-14h160l10-20h100l10 20h84v38z" fill="#4a1f0e"/>
+  </svg>
+</header>
+
+<div class="road"></div>
+<!-- STOP 01 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/01.jpg" data-full="images/full/01.jpg" loading="lazy" alt="Trip photo 01"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>01</b></span>
+      <p>This wasn't the first gas station I stopped at, I was joking when I implied I was going to show you every gas station in America. But this is my favorite gas station, in my second favorite town in the entire US - The Pump & Pantry in Grand Island, Nebraska (Also happens to be my favorite state).</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 02 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/02.jpg" data-full="images/full/02.jpg" loading="lazy" alt="Trip photo 02"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>02</b></span>
+      <p>That's right folks, there's a Cinnabon and a Quiznos INSIDE. It's like MAGIC.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 03 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/03.jpg" data-full="images/full/03.jpg" loading="lazy" alt="Trip photo 03"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>03</b></span>
+      <p>The coffee bar is elite status.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 04 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/04.jpg" data-full="images/full/04.jpg" loading="lazy" alt="Trip photo 04"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>04</b></span>
+      <p>This is Wyoming. Okay next slide please.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 05 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/05.jpg" data-full="images/full/05.jpg" loading="lazy" alt="Trip photo 05"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>05</b></span>
+      <p>The Sinclair gas station chain is only found in the western US. I am fond of the green dinosaur that is both its logo and a representation of gasoline's heritage.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 06 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/06.jpg" data-full="images/full/06.jpg" loading="lazy" alt="Trip photo 06"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>06</b></span>
+      <p>If you've been saving your pebbles to pay for gas, the Sinclair is the place to cash them in. Fred Flitstone knows.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 07 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/07.jpg" data-full="images/full/07.jpg" loading="lazy" alt="Trip photo 07"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>07</b></span>
+      <p>Let's fast forward to, oh, here we are - The Great Salt Lake. Although it's usually dry, this week it was flooded - a rare and exceptional experience that is very hard to time unless you live locally. A sea of salt, only 4 inches deep, stretches for hundreds of miles.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 08 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/08.jpg" data-full="images/full/08.jpg" loading="lazy" alt="Trip photo 08"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>08</b></span>
+      <p>Nice cross-section of the salt crust.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 09 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/09.jpg" data-full="images/full/09.jpg" loading="lazy" alt="Trip photo 09"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>09</b></span>
+      <p>There are areas where the water is so shallow people get brave and try to drive out on it. These areas all follow the same recipie: tracks leading a short distance out into the muck, where they suddenly stop and there is evidence of frantic concern and shoveling.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 10 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/10.jpg" data-full="images/full/10.jpg" loading="lazy" alt="Trip photo 10"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>10</b></span>
+      <p>This photo needs some explanation - Annie joined me by flying from Cleveland to Salt Lake City about halfway through my trip. She arrived hungry and, in keeping with the trip's theme, demanded a gas station hot dog immediately after stepping off the plane. "Ahhh but what gas station?" That's a great question I'm glad you asked - it was a Maverick.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 11 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/11.jpg" data-full="images/full/11.jpg" loading="lazy" alt="Trip photo 11"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>11</b></span>
+      <p>Annie and I arrived at our friend's house in SLC, where we stayed for the weekend. I had 100 of these mugs made 3 years ago and distributed them to all of my friends, so that no matter who's house I stayed at, no matter where it was, there would always be a coffee mug for me to use. I believe they call this a "long con".</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 12 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/12.jpg" data-full="images/full/12.jpg" loading="lazy" alt="Trip photo 12"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>12</b></span>
+      <p>You didn't think Annie was going to be able to skip a Sinclair, did you?</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 13 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/13.jpg" data-full="images/full/13.jpg" loading="lazy" alt="Trip photo 13"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>13</b></span>
+      <p>I like that this gas station manager has chosen to decorate their Sinclairosaur with a Green Bay Packers necktie. No need to make America great, folks - it's already incredible.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 14 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/14.jpg" data-full="images/full/14.jpg" loading="lazy" alt="Trip photo 14"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>14</b></span>
+      <p>A picture of nature or something I dunno.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 15 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/15.jpg" data-full="images/full/15.jpg" loading="lazy" alt="Trip photo 15"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>15</b></span>
+      <p>I stopped by an Air Force museum, where I discovered their conservators were spray painting a highly collectable F-117. Yes, SPRAY PAINT.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 16 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/16.jpg" data-full="images/full/16.jpg" loading="lazy" alt="Trip photo 16"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>16</b></span>
+      <p>They did have some incredible stuff though, including the only F-22 Raptor currently in a museum.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 17 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/17.jpg" data-full="images/full/17.jpg" loading="lazy" alt="Trip photo 17"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>17</b></span>
+      <p>Plane</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 18 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/18.jpg" data-full="images/full/18.jpg" loading="lazy" alt="Trip photo 18"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>18</b></span>
+      <p>While Annie and I were staying with our friend in SLC, they had a haloween party - I was The Raven, and Annie was the Lost (dead) Lenore.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 19 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/19.jpg" data-full="images/full/19.jpg" loading="lazy" alt="Trip photo 19"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>19</b></span>
+      <p>I don't know why this photo is in the album but if I remove it all of my <div class="entry-wrap"> text wrapping will get screwed up so I'm leaving it.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 20 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/20.jpg" data-full="images/full/20.jpg" loading="lazy" alt="Trip photo 20"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>20</b></span>
+      <p>Alright, big jump here (Ahahaha foreshadowing!). I arrived in Moab Utah one day after catastrophic flash flooding hit the region. This road is called Kanes Creek, and it follows the Colorado River through Utah. I'm standing on the road on one side, looking across to campers who have been stranded by the floods. The road is gone and they were just waiting for the water to lower so they could try fording it. There was nothing I could do to help so I turned around.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 21 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/21.jpg" data-full="images/full/21.jpg" loading="lazy" alt="Trip photo 21"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>21</b></span>
+      <p>This is the Colorado River valley - you can see that even a day after massive rains, the river is very small - 100 years of farming irrigation have almost dried the Colorado up completely.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 22 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/22.jpg" data-full="images/full/22.jpg" loading="lazy" alt="Trip photo 22"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>22</b></span>
+      <p>Utah has a lot of varied terrain - sand, sand with brush, sand with small trees, and even sand with rocks.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 23 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/23.jpg" data-full="images/full/23.jpg" loading="lazy" alt="Trip photo 23"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>23</b></span>
+      <p>Example of Sand With Rocks.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 24 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/24.jpg" data-full="images/full/24.jpg" loading="lazy" alt="Trip photo 24"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>24</b></span>
+      <p>Example of Rocks With Trees And Sand.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 25 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/25.jpg" data-full="images/full/25.jpg" loading="lazy" alt="Trip photo 25"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>25</b></span>
+      <p>I stayed in hotels because camping is for plebes, this was a view from one of my Utah hotel stays.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 26 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/26.jpg" data-full="images/full/26.jpg" loading="lazy" alt="Trip photo 26"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>26</b></span>
+      <p>One morning I got up early for the hundred mile drive to Gemini Bridges, a remote land feature that isn't too difficult to access but involves a lot of trail driving.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 27 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/27.jpg" data-full="images/full/27.jpg" loading="lazy" alt="Trip photo 27"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>27</b></span>
+      <p>While driving to Gemini Bridges, I encountered lots of flash flooding evidence.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 28 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/28.jpg" data-full="images/full/28.jpg" loading="lazy" alt="Trip photo 28"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>28</b></span>
+      <p>"You Are Here". But where is here?</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 29 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/29.jpg" data-full="images/full/29.jpg" loading="lazy" alt="Trip photo 29"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>29</b></span>
+      <p>Somewhere right now a hot mom is selecting a plastic immitation of this to decorate her new house in the Pheasant Valley development, a group of houses in a New Jersey suburb that is neither located in a valley nor populated with Pheasants.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 30 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/30.jpg" data-full="images/full/30.jpg" loading="lazy" alt="Trip photo 30"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>30</b></span>
+      <p>This is Gemini Bridges! A massive rock formation hollowed out by winds and rain.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 31 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/31.jpg" data-full="images/full/31.jpg" loading="lazy" alt="Trip photo 31"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>31</b></span>
+      <p>This is what Gemini Bridges looks like as you're walking up to it. Keep in mind there are no trail markings or signs, you're out in the middle of an uninhabited desert with no cell service and no other people. I was only able to locate this site with GPS.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 32 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/32.jpg" data-full="images/full/32.jpg" loading="lazy" alt="Trip photo 32"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>32</b></span>
+      <p>That's him! That's the guy!</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 33 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/33.jpg" data-full="images/full/33.jpg" loading="lazy" alt="Trip photo 33"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>33</b></span>
+      <p>When I walked up to Gemini Bridges, I was standing on top of this sinkhole collapse, I didn't even realize I was precariously perched on a crust of dirt until I went around the other side.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 34 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/34.jpg" data-full="images/full/34.jpg" loading="lazy" alt="Trip photo 34"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>34</b></span>
+      <p>I also tried to access another site called Four Arches, but due to the flash flooding I was unable to reach it. I drove for 20 miles, working my way up progressively more difficult rock formations. I was really beating the Land Cruiser up and I was growing concerned.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 35 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/35.jpg" data-full="images/full/35.jpg" loading="lazy" alt="Trip photo 35"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>35</b></span>
+      <p>This is where I abandoned the trail and turned around. I was only a few miles from the site, but being alone, without cell phone coverage, it was just too risky to keep pushing on. This rock ledge was 2 feet tall, I would have needed to stack rocks to keep going.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 36 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/36.jpg" data-full="images/full/36.jpg" loading="lazy" alt="Trip photo 36"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>36</b></span>
+      <p>Remember the Kanes Creek washout picture from earlier? I guess the campers decided to call in a specialty tow truck and see if they could winch them across. They promptly rolled into the water. I was fortunate that I showed up to check on the water levels 2 days after the first photo, and arrived moments after this happened.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 37 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/37.jpg" data-full="images/full/37.jpg" loading="lazy" alt="Trip photo 37"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>37</b></span>
+      <p>There are many fossils in the American west. These are some of them.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 38 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/38.jpg" data-full="images/full/38.jpg" loading="lazy" alt="Trip photo 38"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>38</b></span>
+      <p>These rocks are natural formations amazingly.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 39 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/39.jpg" data-full="images/full/39.jpg" loading="lazy" alt="Trip photo 39"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>39</b></span>
+      <p>Rocks with Uranium! And yes they really are radioactive!</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 40 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/40.jpg" data-full="images/full/40.jpg" loading="lazy" alt="Trip photo 40"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>40</b></span>
+      <p>This was a Ford Econoline E250, a model that has been extinct for years.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 41 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/41.jpg" data-full="images/full/41.jpg" loading="lazy" alt="Trip photo 41"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>41</b></span>
+      <p>Big fast forward again, this is in Vail Colorado - a high elevation area known for its world class ski slopes. I wanted to ascend a peak near vail called "The Spider", which would get me to 12,500 feet of altitude. I got up early in the morning and started climbing the unfamiliar roads in the dark, with just my headlights and the moon to keep me from falling off the edge.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 42 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/42.jpg" data-full="images/full/42.jpg" loading="lazy" alt="Trip photo 42"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>42</b></span>
+      <p>The road was difficult at times, especially in the dark. I kept hitting my skid plate on rocks I couldn't see well.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 43 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/43.jpg" data-full="images/full/43.jpg" loading="lazy" alt="Trip photo 43"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>43</b></span>
+      <p>As the air temp dropped below 25 degrees F, preserved mountain berries began to appear.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 44 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/44.jpg" data-full="images/full/44.jpg" loading="lazy" alt="Trip photo 44"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>44</b></span>
+      <p>Birch trees populated the lower elevations, replaced with spruce and pine at higher elevations.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 45 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/45.jpg" data-full="images/full/45.jpg" loading="lazy" alt="Trip photo 45"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>45</b></span>
+      <p>This was around 10,000 feet. I was feeling unwell at this altitude - I had a serious headache.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 46 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/46.jpg" data-full="images/full/46.jpg" loading="lazy" alt="Trip photo 46"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>46</b></span>
+      <p>Part of the town of Vail.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 47 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/47.jpg" data-full="images/full/47.jpg" loading="lazy" alt="Trip photo 47"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>47</b></span>
+      <p>Finally got to full snow at 12,000 feet.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 48 -->
+<section class="entry reverse">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/48.png" data-full="images/full/48.png" loading="lazy" alt="Trip photo 48"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>48</b></span>
+      <p>You might be wondering how I find these trails and roads. I use software that I pay for called OnX, it's specifically designed for recreational explorers, hikers, 4x4'ers, and others. It lets explorers report on the conditions they find, it provides critical information such as trail length and elevation, and has advanced GIS mapping capabilities that show private land parcels and other property borders so you don't end up tresspassing and can stay on public land.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<!-- STOP 49 -->
+<section class="entry">
+  <div class="entry-wrap">
+    <div class="entry-media"><img src="images/49.png" data-full="images/full/49.png" loading="lazy" alt="Trip photo 49"></div>
+    <div class="entry-text">
+      <span class="label stop">Stop <b>49</b></span>
+      <p>An area in Utah as seen via OnX.</p>
+    </div>
+  </div>
+</section>
+
+<div class="road"></div>
+<footer>
+  <span class="label">End of the road</span>
+  <p>[Closing line]</p>
+</footer>
+
+<script>
+  // Blank photo slots: if an image file isn't there yet, show an empty placeholder box
+  document.querySelectorAll('.entry-media img').forEach(img=>{
+    const mark = ()=>{ const d=document.createElement('div'); d.className='missing'; d.textContent=img.alt+' — add images/'+img.getAttribute('src').split('/').pop(); img.replaceWith(d); };
+    img.addEventListener('error', mark);
+    if(img.complete && img.naturalWidth === 0) mark();
+  });
+
+  const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});},{threshold:0.1});
+  document.querySelectorAll('.entry-wrap').forEach(t=>io.observe(t));
+
+  const bar = document.getElementById('progress');
+  window.addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';});
+
+  const lb = document.getElementById('lightbox'), lbImg = document.getElementById('lightbox-img');
+  document.querySelectorAll('.entry-media img').forEach(img=>{
+    img.addEventListener('click',()=>{ lbImg.src=img.dataset.full||img.src; lbImg.alt=img.alt; lb.classList.add('open'); });
+  });
+  lb.addEventListener('click',()=>lb.classList.remove('open'));
+  window.addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('open');});
+</script>
+</body>
+</html>
